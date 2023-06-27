@@ -32,6 +32,10 @@ variable "instance-type" {
   description = "instance type"  
 }
 
+variable "private-key-location" {
+    description = "ec2 instance private key file location"
+}
+
 resource "aws_vpc" "development-vpc" {
   cidr_block = var.dev-vpc-cidr-block
   tags = {
@@ -126,7 +130,23 @@ resource "aws_instance" "ec2-instance" {
   associate_public_ip_address = true
   key_name = "Jenkins-Server-KP"
 
-  user_data = file("entry-script.sh")
+  # user_data = file("entry-script.sh")
+
+  connection {
+    type = "ssh"
+    host = self.public_ip
+    user = "ubuntu"
+    private_key = file(var.private-key-location)
+  }
+
+  provisioner "file" {
+    source = "entry-script.sh"
+    destination = "/home/ubuntu/entry-script-on-ec2.sh"
+  }
+
+  provisioner "remote-exec" {
+    script = file("entry-script-on-ec2.sh")    
+  }
 
   tags = {
     Name = "${var.env-prefix}-server"
